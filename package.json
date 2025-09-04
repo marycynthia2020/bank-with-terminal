@@ -1,0 +1,27 @@
+{
+  "name": "bank-with-terminal",
+  "version": "1.0.0",
+  "description": "This is a simple simulation of bank system that runs on the terminal",
+  "keywords": [
+    "bank",
+    "node",
+    "node.js",
+    "transactions",
+    "users"
+  ],
+  "homepage": "https://github.com/marycynthia2020/bank-with-terminal#readme",
+  "bugs": {
+    "url": "https://github.com/marycynthia2020/bank-with-terminal/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marycynthia2020/bank-with-terminal.git"
+  },
+  "license": "ISC",
+  "author": "Chinemerem Ugbaja",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
