@@ -259,9 +259,9 @@ async function transferMoney() {
   const usersData = await readDatabase();
 
   let currentUserOnDB = await usersData.find(user => user.id === currentUser.id);
-  
+
   let receiver = await usersData.find(
-    user => user.email == receiverEmail && user.email !== currentUser.email
+    user => user.email == receiverEmail && user.email !== currentUserOnDB.email
   );
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -280,17 +280,17 @@ async function transferMoney() {
     transferAmount = await ask("Enter a valid Number");
   }
 
-  while (Number(transferAmount > Number(currentUser.amount))) {
+  while (Number(transferAmount > Number(currentUserOnDB.amount))) {
     transferAmount = await ask(
       "You account is low for this transaction. Enter an below within your balance range: "
     );
   }
 
   if (receiver) {
-    currentUser.amount -= Number(transferAmount);
+    currentUserOnDB.amount -= Number(transferAmount);
     receiver.amount += Number(transferAmount);
 
-    currentUser.notifications.push = [
+    currentUserOnDB.notifications.push = [
       {
         message: `You sent #${transferAmount} to ${receiverEmail}`,
         isRead: false,
