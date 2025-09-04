@@ -258,62 +258,61 @@ async function changePin() {
 async function transferMoney() {
   const usersData = await readDatabase();
 
-  let currentUserOnDB = await usersData.find(user => user.id === currentUser.id);
-
-  let receiver = await usersData.find(
-    user => user.email == receiverEmail && user.email !== currentUserOnDB.email
+  let currentUserOnDB = await usersData.find(
+    user => user.id === currentUser.id
   );
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   let receiverEmail = await ask("Enter receiver's email: ");
 
   while (!emailRegex.test(receiverEmail)) {
     receiverEmail = await ask("Enter a a valid  email: ");
   }
 
-  
+  let receiver = await usersData.find(
+    user => user.email === receiverEmail && user.email !== currentUserOnDB.email
+  );
+
   let transferAmount = await ask("Enter amount to send: ");
 
   while (
-    Number(transferAmount > 0 && typeof Number(transferAmount) !== "number")
+    Number(
+      transferAmount <= 0 ||
+        isNaN(transferAmount) ||
+        Number(transferAmount) > Number(currentUserOnDB.amount)
+    )
   ) {
-    transferAmount = await ask("Enter a valid Number");
-  }
-
-  while (Number(transferAmount > Number(currentUserOnDB.amount))) {
-    transferAmount = await ask(
-      "You account is low for this transaction. Enter an below within your balance range: "
-    );
+    transferAmount = await ask("Enter a valid Number: ");
   }
 
   if (receiver) {
     currentUserOnDB.amount -= Number(transferAmount);
     receiver.amount += Number(transferAmount);
 
-    currentUserOnDB.notifications.push = [
-      {
-        message: `You sent #${transferAmount} to ${receiverEmail}`,
-        isRead: false,
-      },
-    ];
-    receiver.notifications.push = [
-      {
-        message: `You received #${transferAmount} from ${currentUser.email}`,
-        isRead: false,
-      },
-    ];
+    currentUserOnDB.notifications.push({
+      message: `You sent #${transferAmount} to ${receiverEmail}`,
+      isRead: false,
+    });
+
+    receiver.notifications.push({
+      message: `You received #${transferAmount} from ${currentUser.email}`,
+      isRead: false,
+    });
+
+    console.log(chalk.yellow("Transaction Processing..."));
+    console.log(usersData);
+
     await writeDatabase(usersData);
 
+    delay(1000);
     console.log(
       chalk.green("Transaction successful. Thank you for banking with use")
     );
     rl.close();
   } else {
-    console.log(
-      chalk.red(
-        "Transaction failed. Check the receiver's email and try again later"
-      )
-    );
+    console.log(chalk.red("Check the user email and try again later"));
+    console.log(chalk.blue("Thank you for banking with us"));
     rl.close();
   }
 }
