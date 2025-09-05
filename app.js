@@ -73,20 +73,6 @@ function showCustomersMenu() {
   console.log("2: Log in");
   console.log("6: Exit");
 }
-
-async function readDatabase() {
-  let usersData = [];
-  try {
-    data = await promisefs.readFile("database.json", "utf-8");
-    if (data) {
-      usersData = JSON.parse(data);
-    }
-  } catch (e) {
-    console.log(e.message);
-  }
-  return usersData;
-}
-
 async function readDatabase() {
   let usersData = [];
   let data;
