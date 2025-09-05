@@ -17,29 +17,6 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function readDatabase() {
-  let usersData = [];
-  let data;
-  try {
-    data = await promisefs.readFile("database.json", "utf-8");
-    if (data) {
-      usersData = JSON.parse(data);
-    }
-  } catch (e) {
-    console.log(e.message);
-  }
-  return usersData;
-}
-
-async function writeDatabase(newUsersData) {
-  let usersData = await readDatabase();
-  try {
-    promisefs.writeFile("database.json", JSON.stringify(newUsersData));
-  } catch (e) {
-    console.log(e.message);
-  }
-}
-
 function CustomersMenu(option) {
   switch (option) {
     case "1":
@@ -80,11 +57,22 @@ function usersMenu(option) {
       break;
 
     default:
-      console.log(
-        "Invalid input. You will need to log in again to Ensure you own this account"
-      );
-      CustomersMenu("2");
+      console.log(chalk.red("Invalid input. Thank you for banking with us"));
+      rl.close();
   }
+}
+
+function showUsersMenu() {
+  console.log("3: Change Pin");
+  console.log("4: Transfer");
+  console.log("5: check Notifications");
+  console.log("7: Log out");
+}
+
+function showCustomersMenu() {
+  console.log("1: Register");
+  console.log("2: Log in");
+  console.log("6: Exit");
 }
 
 async function readDatabase() {
@@ -100,10 +88,33 @@ async function readDatabase() {
   return usersData;
 }
 
+async function readDatabase() {
+  let usersData = [];
+  let data;
+  try {
+    data = await promisefs.readFile("database.json", "utf-8");
+    if (data) {
+      usersData = JSON.parse(data);
+    }
+  } catch (e) {
+    console.log(e.message);
+  }
+  return usersData;
+}
+
+async function writeDatabase(newUsersData) {
+  let usersData = await readDatabase();
+  try {
+    promisefs.writeFile("database.json", JSON.stringify(newUsersData));
+  } catch (e) {
+    console.log(e.message);
+  }
+}
+
 async function register() {
   let usersData = await readDatabase();
   let newUser;
-  console.log("Thank you for choosing to bank with us");
+  console.log(chalk.green("Thank you for choosing to bank with us"));
   let userEmail;
   let userpassword;
   let userPin;
@@ -150,7 +161,7 @@ async function register() {
   await writeDatabase(usersData);
   console.log("Processing...");
   await delay(2000);
-  console.log("Registration succesfull. happy banking");
+  console.log(chalk.green("Registration succesfull. Happy banking"));
 
   const userResponse = await ask(
     "Do you wish to continue?. Press 2. To exit press 6: "
@@ -158,7 +169,7 @@ async function register() {
   if (userResponse === "2" || userResponse === "6") {
     CustomersMenu(userResponse);
   } else {
-    console.log("Thank you for choosing us always");
+    console.log(chalk.green("Thank you for choosing us always"));
     rl.close();
   }
 }
@@ -190,15 +201,20 @@ async function login() {
     existingUser.isLoggedIn = true;
 
     await writeDatabase(usersData);
-    console.log(chalk.green("log in successful."));
+    console.log(chalk.green("\nLog in successful."));
+    availableNotifications = await existingUser.notifications.filter(
+      notice => notice.isRead === false
+    );
+    console.log(
+      chalk.cyan(
+        `\nYou have ${availableNotifications.length} unread notifications\n `
+      )
+    );
 
-    console.log("3: Change Pin");
-    console.log("4: Transfer");
-    console.log("5: check Notifications");
-    console.log("7: Log out");
+    showUsersMenu();
 
     let input = await ask(
-      "Do you wish to continue? Enter an option to proceed: "
+      "\nDo you wish to continue? Enter an option to proceed\n: "
     );
 
     while (input !== "3" && input !== "4" && input !== "5" && input !== "7") {
@@ -207,12 +223,13 @@ async function login() {
     usersMenu(input);
   } else {
     console.log(
-      "You have not yet register an account. press 1 to open an account. Press 6 to exit. "
+      chalk.red(
+        "\nYou have not yet registered an account. Enter 1 to create an account"
+      )
     );
+    showCustomersMenu();
     let userResponse = await ask(": ");
-    userResponse === "1" || userResponse === "6"
-      ? CustomersMenu(userResponse)
-      : CustomersMenu("6");
+    CustomersMenu(userResponse);
   }
 }
 
@@ -301,25 +318,72 @@ async function transferMoney() {
     });
 
     console.log(chalk.yellow("Transaction Processing..."));
-    console.log(usersData);
-
     await writeDatabase(usersData);
 
     delay(1000);
-    console.log(
-      chalk.green("Transaction successful. Thank you for banking with use")
+    console.log(chalk.green("Transaction successful."));
+    showUsersMenu();
+    let userResponse = await ask(
+      "Wish to perform another transaction? Enter an option to continue: "
     );
-    rl.close();
+    usersMenu(userResponse);
   } else {
-    console.log(chalk.red("Check the user email and try again later"));
-    console.log(chalk.blue("Thank you for banking with us"));
-    rl.close();
+    console.log(chalk.red("Check the user email and try again"));
+    usersMenu("4");
   }
 }
 
 async function checkNotifications() {
-  console.log("notification succesfully seen");
-  rl.close();
+  let usersData = await readDatabase();
+  let currentUserOnDB = usersData.find(user => user.id === currentUser.id);
+  console.log("\n11: All notifications");
+  console.log("12: Unread Notificaons");
+  console.log("13: read Notifications");
+
+  let userResponse = await ask("\nEnter an option to continue: ");
+
+  switch (userResponse) {
+    case "11":
+      let all = currentUserOnDB.notifications;
+      console.log(chalk.blue(`\nTotal notifications: ${all.length}\n`));
+      all.length > 0 && all.map((notice, index) => {
+        console.log(chalk.cyan(`${index + 1}: ${notice.message}\n`));
+        notice.isRead = true;
+      });
+      break;
+
+    case "12":
+      let unRead = currentUserOnDB.notifications.filter(
+        notice => notice.isRead === false
+      );
+      console.log(chalk.blue(`\nYou have ${unRead.length} unread notifications\n`));
+      unRead.length > 0 && unRead.map((notice, index) => {
+        console.log(chalk.cyan(`${index + 1}: ${notice.message}\n`));
+      });
+      break;
+
+      case "13":
+      let read = currentUserOnDB.notifications.filter(
+        notice => notice.isRead
+      );
+      console.log(chalk.blue(`\nYou have ${read.length} read notifications\n`));
+      read.length > 0 && read.map((notice, index) => {
+        console.log(chalk.cyan(`${index + 1}: ${notice.message}`));
+      });
+      break;
+
+    default:
+      console.log(chalk.red("\nInvalid Input"));
+      usersMenu("5");
+      break;
+  }
+
+  await writeDatabase(usersData);
+  showUsersMenu();
+  userResponse = await ask(
+    "\nDo you wish to proceed? Enter an option to proceed:"
+  );
+  usersMenu(userResponse);
 }
 
 async function logout() {
@@ -335,11 +399,9 @@ async function logout() {
 
 async function welcomeMessage() {
   console.log("Welcome to terminal banking");
-  console.log("1: Register");
-  console.log("2: Log in");
-  console.log("6: Exit");
+  showCustomersMenu();
   let input;
-  input = await ask("Please select an option to continue: ");
+  input = await ask("\nPlease select an option to continue\n: ");
 
   while (input !== "1" && input !== "2" && input !== "6") {
     input = await ask("Please enter a valid option: ");
