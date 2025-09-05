@@ -1,7 +1,6 @@
 const readline = require("readline");
 const promisefs = require("fs/promises");
 const chalk = require("chalk");
-const { isReadable } = require("stream");
 
 let currentUser;
 
@@ -252,23 +251,32 @@ async function changePin() {
       newPin = await ask("pin must be 4 characters: ");
     }
     existingUserOnDB.pin = newPin;
+    existingUserOnDB.notifications.push({
+      message: "You successfully updated your transaction pin.",
+      isReas: false,
+    });
     await writeDatabase(usersData);
-    console.log("processing...");
+    console.log(chalk.yellow("\nprocessing..."));
     await delay(1000);
-    console.log("Pin successfully updated");
-    console.log("You need to re-login to continue using this service");
-    console.log("Thank you for banking with us");
-    rl.close();
+    console.log(chalk.green("\nPin successfully updated\n"));
+    showUsersMenu();
+    let userResponse = await ask(
+      "Do you wish to continue. Select an option: \n"
+    );
+    usersMenu(userResponse);
   } else {
     console.log("Processing...");
     await delay(1000);
     console.log(
       chalk.red(
-        "it seems you forgot your pin. We do not offer pin retrieval yet. sorry for the inconveniences"
+        "it seems you forgot your pin. We do not offer pin retrieval yet. sorry for the inconveniences.\n"
       )
-    );
-    console.log("Thank you for banking with us");
-    rl.close();
+    )
+    userResponse = await ask("Press 4 to to try again, else press any key to exit: ")
+    userResponse === "3" ? usersMenu(userResponse) : usersMenu("7")
+
+
+    
   }
 }
 
@@ -346,30 +354,33 @@ async function checkNotifications() {
     case "11":
       let all = currentUserOnDB.notifications;
       console.log(chalk.blue(`\nTotal notifications: ${all.length}\n`));
-      all.length > 0 && all.map((notice, index) => {
-        console.log(chalk.cyan(`${index + 1}: ${notice.message}\n`));
-        notice.isRead = true;
-      });
+      all.length > 0 &&
+        all.map((notice, index) => {
+          console.log(chalk.cyan(`${index + 1}: ${notice.message}\n`));
+          notice.isRead = true;
+        });
       break;
 
     case "12":
       let unRead = currentUserOnDB.notifications.filter(
         notice => notice.isRead === false
       );
-      console.log(chalk.blue(`\nYou have ${unRead.length} unread notifications\n`));
-      unRead.length > 0 && unRead.map((notice, index) => {
-        console.log(chalk.cyan(`${index + 1}: ${notice.message}\n`));
-      });
+      console.log(
+        chalk.blue(`\nYou have ${unRead.length} unread notifications\n`)
+      );
+      unRead.length > 0 &&
+        unRead.map((notice, index) => {
+          console.log(chalk.cyan(`${index + 1}: ${notice.message}\n`));
+        });
       break;
 
-      case "13":
-      let read = currentUserOnDB.notifications.filter(
-        notice => notice.isRead
-      );
+    case "13":
+      let read = currentUserOnDB.notifications.filter(notice => notice.isRead);
       console.log(chalk.blue(`\nYou have ${read.length} read notifications\n`));
-      read.length > 0 && read.map((notice, index) => {
-        console.log(chalk.cyan(`${index + 1}: ${notice.message}`));
-      });
+      read.length > 0 &&
+        read.map((notice, index) => {
+          console.log(chalk.cyan(`${index + 1}: ${notice.message}`));
+        });
       break;
 
     default:
@@ -398,7 +409,7 @@ async function logout() {
 }
 
 async function welcomeMessage() {
-  console.log("Welcome to terminal banking");
+  console.log("Welcome to terminal banking\n");
   showCustomersMenu();
   let input;
   input = await ask("\nPlease select an option to continue\n: ");
